@@ -1,0 +1,12 @@
+etl:
+  csv_path: "data/*.csv"
+  artifacts_path: "artifacts"
+
+geocode:
+  csv_path: "data"
+  csv_fname: "resale-flat-prices-based-on-registration-date-from-jan-2015-to-dec-2016.csv"
+  batch_size: 1000
+  artifacts_path: "artifacts"
+
+eda:
+  artifacts_path: "artifacts"

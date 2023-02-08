@@ -1,0 +1,3 @@
+# Configure Streamlit to use a custom Mapbox token for elements like st.pydeck_chart and st.map. To get a token for yourself, create an account at https://mapbox.com. It's free (for moderate usage levels)!
+# Default: ""
+# token = ""
