@@ -160,3 +160,5 @@ cython_debug/
 #.idea/
 
 artifacts/df_2015*.csv
+
+.streamlit/
