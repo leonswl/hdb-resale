@@ -22,9 +22,7 @@ def read_concat_csv_to_df(path):
         df_raw = pd.read_csv(fname) # read csv into pandas df
         df_lst.append(df_raw) # append df into list
 
-    df_total = pd.concat(df_lst) # concat list of dfs into a single df
-
-    return df_total
+    return pd.concat(df_lst)
 
 
 def transform(df_bef: pd.DataFrame) -> pd.DataFrame:
@@ -41,7 +39,7 @@ def transform(df_bef: pd.DataFrame) -> pd.DataFrame:
     list_cols = ['remaining_lease','block','full_address','street_name']
     result = any(item in df_bef.columns for item in list_cols)
 
-    if result is True:
+    if result:
 
         # convert string values of `remaining_lease` into years, rounded off to the nearest integer
         df_bef['remaining_lease'] = df_bef['remaining_lease'].apply(lambda x: convert_to_year_num(x) if isinstance(x,str) else x)
@@ -58,7 +56,7 @@ def transform(df_bef: pd.DataFrame) -> pd.DataFrame:
 
     return df_aft
 
-def convert_to_year_num (val):
+def convert_to_year_num(val):
     """
     Function to convert years in string values to int, rounded off to the nearest integer
 
@@ -70,15 +68,10 @@ def convert_to_year_num (val):
 
     """
     str_lst = val.split(' ')
-    # if there are more than 2 values in the list, i.e. have both years and months
-    if len(str_lst) > 2: 
-        year = int(str_lst[0])
-        month = int(str_lst[2])
-        year_num = int(round(year + month/12,0))
-    # only years value 
-    else:
-        year_num = int(str_lst[0],0)
-    return year_num
+    if len(str_lst) <= 2:
+        return int(str_lst[0],0)
+    year = int(str_lst[0])
+    return int(round(year + int(str_lst[2]) / 12, 0))
 
 
 def apply_geocode (df_geocode, address_field):

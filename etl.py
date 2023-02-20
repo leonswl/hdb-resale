@@ -41,10 +41,10 @@ def geocode():
 
     #Creating an instance of Nominatim Class
     geolocator = Nominatim(user_agent="my_request")
-    
+
     #applying the rate limiter wrapper
     geocode = RateLimiter(geolocator.geocode, min_delay_seconds=0.1)
-    
+
     start_time = time.time()
 
     # read input csv file
@@ -58,17 +58,17 @@ def geocode():
     batch_count = ceil(len(df_transformed)/batch_size)
     batch_counter = 0
     l_index, r_index = 0, batch_size
-    for i in range(batch_count):
+    for _ in range(batch_count):
         batch_progress = {'batch_counter': batch_counter, 'l_index': l_index}
         df_batch = df_2015[l_index:r_index] # slice dataframe according to batch size index
         batch_counter += 1
         l_index, r_index = r_index, r_index + batch_size # set new left and right index reference
-        
+
         print(f"""
         {batch_progress}
         """)
         #Applying the method to pandas DataFrame
-        df_batch['location'] = df_batch['full_address'].apply(geocode) 
+        df_batch['location'] = df_batch['full_address'].apply(geocode)
         df_batch['Lat'] = df_batch['location'].apply(lambda x: x.latitude if x else None)
         df_batch['Lon'] = df_batch['location'].apply(lambda x: x.longitude if x else None)
 
