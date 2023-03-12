@@ -8,5 +8,13 @@ geocode:
   batch_size: 1000
   artifacts_path: "artifacts"
 
+geocode_combine:
+  geocode_files_path: "artifacts/*.csv"
+  artifacts_path: "artifacts"
+
 eda:
   artifacts_path: "artifacts"
+
+geospatial:
+  artifacts_path: "artifacts"
+  artifact_file: "2015_geocoded.parquet"

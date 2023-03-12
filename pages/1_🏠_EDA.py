@@ -8,6 +8,12 @@ with open("config.yml", encoding="utf-8", mode='r') as ymlfile:
     cfg = yaml.load(ymlfile, Loader=yaml.Loader)
     artifacts_path = cfg['eda']['artifacts_path']
 
+# cache data to avoid reloading data
+@st.cache(ttl=300)
+def load_parquet(path_filename):
+    df_loaded = pd.read_parquet(path_filename)
+    return df_loaded
+
 def main():
     """
     First page of Streamlit app to render EDA visualisations
@@ -24,8 +30,9 @@ def main():
     I’ll perform initial investigations of the dataset to discover any patterns and anomalies, and also check hypothesis and form hypothesis. 
     """)
 
+    df_resale = load_parquet(f'{artifacts_path}/hdb_resale.parquet')
+
     with st.expander("Expand to see snippet of dataframe"):
-        df_resale = pd.read_parquet(f'{artifacts_path}/hdb_resale.parquet')
         st.dataframe(df_resale[:10000])
 
     df_town = pd.DataFrame(df_resale.groupby(['town']).town.count())
