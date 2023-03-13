@@ -51,6 +51,9 @@ def transform(df_bef: pd.DataFrame) -> pd.DataFrame:
         # drop irrelevant columns
         df_aft = df_bef.drop(['block','street_name'],axis=1)
 
+        # create year column
+        df_aft['year'] = df_aft['month'].apply(lambda x: int(x.split('-')[0]))
+
     else:
         print("dataframe does not have the necessary columns")
 
