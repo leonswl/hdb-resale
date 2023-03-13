@@ -9,10 +9,9 @@ with open("config.yml", encoding="utf-8", mode='r') as ymlfile:
     artifacts_path = cfg['eda']['artifacts_path']
 
 # cache data to avoid reloading data
-@st.cache(ttl=300)
+@st.cache_data(ttl=300)
 def load_parquet(path_filename):
-    df_loaded = pd.read_parquet(path_filename)
-    return df_loaded
+    return pd.read_parquet(path_filename)
 
 def main():
     """
