@@ -54,6 +54,9 @@ def transform(df_bef: pd.DataFrame) -> pd.DataFrame:
         # create year column
         df_aft['year'] = df_aft['month'].apply(lambda x: int(x.split('-')[0]))
 
+        # convert resale_price column to integer
+        df_aft['resale_price'] = df_aft['resale_price'].apply(lambda x: int(x))
+
     else:
         print("dataframe does not have the necessary columns")
 
