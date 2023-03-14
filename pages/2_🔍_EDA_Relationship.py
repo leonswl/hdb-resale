@@ -26,6 +26,33 @@ def load_parquet(path_filename):
     
     return pd.read_parquet(path_filename)
 
+# 
+@st.cache_data(ttl=300)
+def agg_date(df, x_selector, y_selector):
+    """Aggregate the input DataFrame `df` by a given `date_level_selector`.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame to be aggregated.
+        date_level_selector (str): Column name to group the DataFrame by.
+
+    Returns:
+        pd.DataFrame: Aggregated DataFrame with minimum, maximum, mean and median resale prices
+    """
+    
+    # Group the DataFrame by the given date_level_selector column
+    # and aggregate the resale_price column using different functions
+    df_agg = pd.DataFrame(df
+                .groupby(by=[x_selector])
+                .agg(
+                    min=pd.NamedAgg(column=y_selector, aggfunc='min'),
+                    max=pd.NamedAgg(column=y_selector, aggfunc='max'),
+                    mean=pd.NamedAgg(column=y_selector, aggfunc=lambda x: int(np.mean(x))),
+                    median=pd.NamedAgg(column=y_selector, aggfunc=lambda x: int(np.median(x)))
+                    )
+                ).reset_index()
+    
+    return df_agg
+
 
 def slice_year_range (df, start_year, end_year):
     """
@@ -73,38 +100,108 @@ def main():
         )
         st.write('You selected year range between', start_year, 'and', end_year)
 
-        # 
-        aggregation_select = st.radio(
-            "Select mode of aggregation",
-            options=('min','max','mean')
+        # RADIO SELECT - AGGREGATION MODE
+        y_aggregation_select = st.radio(
+            "Select mode of aggregation for resale price. This applies to all charts on this page",
+            options=('mean','median','min','max')
         )
-        st.write('You selected aggregation mode', aggregation_select)
+        st.write('You selected aggregation mode: ', y_aggregation_select)
+
+        # RADIO SELECT - DATE LEVEL
+        x_date_select = st.radio(
+            "Select date level. This applies only to the first chart with time as the x-axis",
+            options=('month','year')
+        )
+        st.write('Your selected data level is: ', x_date_select)
 
     
 
-    st.write("""
-    I’ll investigate more about the relationships between resale price and other factors. 
-    """)
-
-
     # slice year range based on user's selected range
     df_resale = slice_year_range(df_load, start_year=start_year, end_year=end_year)
+    df_resale.drop(['full_address','search_address','lease_commence_date'],axis=1,inplace=True)
 
-    df_agg_month = pd.DataFrame(df_resale.groupby(by=['month'])
-                                 .agg(
-                                    min=pd.NamedAgg(column='resale_price',aggfunc='min'),
-                                    max=pd.NamedAgg(column='resale_price',aggfunc='max'),
-                                    mean=pd.NamedAgg(column='resale_price',
-                                    aggfunc=lambda x: int(np.mean(x)))
-                                    )
-                                ).reset_index()
+    col1, col2 = st.columns([2,3])
+
+    with col1:
+        st.markdown(
+            """
+            I'll investigate how resale price changes with the various features:
+            1. Time (month/year) - note that data is based on date of approval for the resale transactions. For March 2012 onwards, the data is based on date of registration for the resale transactions
+            2. Town
+            3. Flat Type
+            4. Storey Range
+            5. Floor Area (sqm)
+            6. Flat Model
+            7. Remaining Lease (years)
+            """
+        )
+    
+    with col2:
+        st.metric('value','value')
+
+    with st.expander("Expand"):
+        st.dataframe(df_resale)
+    # LINE PLOT - resale price against TIME
+    # slice dataframe based on users' selected date level (month or year) and aggregate them
+    df_price_date = agg_date(df_resale, x_selector=x_date_select, y_selector='resale_price')
+    fig_price_date = px.line(
+                        df_price_date, 
+                        x=x_date_select, 
+                        y=y_aggregation_select, 
+                        title='Resale Price against Time')
+    st.plotly_chart(fig_price_date, use_container_width=True)
+
+    # BAR PLOT - resale price and TOWN
+    # slice dataframe based on town and aggregate them
+    df_price_town = agg_date(df_resale, x_selector='town', y_selector='resale_price')
+
+    fig_price_town = px.bar(
+                    df_price_town, 
+                    x='town',
+                    y=y_aggregation_select,
+                    title=f'{y_aggregation_select.title()} Resale Price in each Town',
+                    text_auto=True).update_layout(xaxis={'categoryorder':'total descending'})
+    st.plotly_chart(fig_price_town, use_container_width=True) # render on streamlit
+
+    # BAR PLOT - resale price and FLAT TYPE
+    # slice dataframe based on  flat type and aggregate them
+    df_price_town = agg_date(df_resale, x_selector='flat_type', y_selector='resale_price')
+
+    fig_price_town = px.bar(
+                    df_price_town, 
+                    x='flat_type',
+                    y=y_aggregation_select,
+                    title=f'{y_aggregation_select.title()} Resale Price in each Flat Type',
+                    text_auto=True).update_layout(xaxis={'categoryorder':'total descending'})
+    st.plotly_chart(fig_price_town, use_container_width=True) # render on streamlit
 
 
-    st.dataframe(df_agg_month[:1000])
+    # BAR PLOT - resale price and STOREY RANGE
+    # slice dataframe based on storey range and aggregate them
+    df_price_town = agg_date(df_resale, x_selector='storey_range', y_selector='resale_price')
+    fig_price_town = px.bar(
+                    df_price_town, 
+                    x='storey_range',
+                    y=y_aggregation_select,
+                    title=f'{y_aggregation_select.title()} Resale Price in each Storey Range',
+                    text_auto=True).update_layout(xaxis={'categoryorder':'total ascending'})
+    st.plotly_chart(fig_price_town, use_container_width=True) # render on streamliT
+
+    # LINE PLOT - resale price and FLOOR AREA
+    # slice dataframe based on floor_area_sqm and aggregate them
+    df_price_area = agg_date(df_resale, x_selector='floor_area_sqm', y_selector='resale_price')
+    fig_price_area = px.line(
+                        df_price_area, x='floor_area_sqm', 
+                        y=y_aggregation_select, 
+                        title='Resale Price against Floor Area (sqm)') # generate figure
+    st.plotly_chart(fig_price_area, use_container_width=True) # render on streamlit
 
 
-    fig_line = px.line(df_agg_month, x="month", y=aggregation_select, title='')
-    st.plotly_chart(fig_line, use_container_width=True)
+    # LINE PLOT - resale price against REMAINING LEASE
+    # slice dataframe based on remaining lease and aggregate them
+    df_price_lease = agg_date(df_resale, x_selector='remaining_lease', y_selector='resale_price')
+    fig_price_lease = px.line(df_price_lease, x='remaining_lease', y=y_aggregation_select, title='Resale Price against Remaining Lease') # generate figure
+    st.plotly_chart(fig_price_lease, use_container_width=True) # render on streamlit
 
 
 

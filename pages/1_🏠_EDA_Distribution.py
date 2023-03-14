@@ -110,6 +110,7 @@ def main():
             value=500
         )
         st.write('You select a bin width of', bin_width, 'for the resale price distribution plot')
+
     # END - SIDEBAR
 
     # METRICS
@@ -130,26 +131,83 @@ def main():
     with st.expander("Expand to see snippet of dataframe"):
         st.dataframe(df_resale[:10000])
 
-    # DISTRIBUTION BAR PLOTS
-    st.markdown(
-        """
-        ## Distribution
-        """
-    )
-    # plots for town, flat_type, storey_range and month
-    for col in ['town','flat_type','storey_range', 'month']:
-        fig_transacts = plot_transacts(df_resale,col)  
-        st.plotly_chart(fig_transacts, use_container_width=True)      
+    tab1, tab2 = st.tabs(["Features", "Resale Price"])
 
-    # plot for resale price
-    fig_price = px.histogram(df_resale,x="resale_price",nbins=bin_width, title='Distribution of Transactions for Resale Price')
-    st.plotly_chart(fig_price, use_container_width=True)
+    with tab1:
+        st.markdown(
+            """
+            ## Features Distribution
+            """
+        )
+        # DISTRIBUTION BAR PLOTS
+        st.markdown(
+            """
+            ## Distribution
+            """
+        )
+        # plots for town, flat_type, storey_range and month
+        for col in ['town','flat_type','storey_range', 'month']:
+            fig_transacts = plot_transacts(df_resale,col)  
+            st.plotly_chart(fig_transacts, use_container_width=True)      
 
-    st.markdown(
-        """
-        ## Resale Price Distribution
-        """
-    )
+    with tab2:
+
+        st.markdown(
+            """
+            ## Resale Price Distribution
+            """
+        )
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            add_field = st.radio(
+                "Split further with:",
+                options=("None","flat_type","town")
+            )
+
+        with col2:
+            # RADIO - DISTRIBUTION
+            dist_type = st.radio(
+                "Select distribution type",
+                options=('box','violin')
+            )
+            # st.markdown(f"You selected `{dist_type}` distribution")
+
+        with col3:
+            if add_field != 'None':
+                field_options = st.multiselect(
+                    "Choose a maximum of 4 options to be included in the distribution plot",
+                    options=df_resale[add_field].unique(),
+                    max_selections=4
+                )
+                st.markdown(f"You selected: `{field_options}`")
+
+                st.write(type(field_options))
+
+        if add_field == 'None':
+            # plot for resale price
+            fig_price = px.histogram(
+                            df_resale,
+                            x="resale_price",
+                            nbins=bin_width, 
+                            title='Distribution of Transactions for Resale Price',
+                            marginal=dist_type)
+            st.plotly_chart(fig_price, use_container_width=True)
+
+        else:
+
+            df_resale_price = df_resale.loc[df_resale[add_field].isin(field_options)]
+            # plot for resale price
+            fig_price = px.histogram(
+                            df_resale_price,
+                            x="resale_price",
+                            nbins=bin_width, 
+                            title='Distribution of Transactions for Resale Price',
+                            color=add_field,
+                            marginal=dist_type)
+            st.plotly_chart(fig_price, use_container_width=True)
+
     
 
 
