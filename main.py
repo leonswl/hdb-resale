@@ -35,10 +35,9 @@ def main():
         """
 
         ## Objectives
-        1.	Exploratory Data Analysis (EDA) – I’ll perform initial investigations of the dataset to discover any patterns and anomalies, and also check hypothesis and form hypothesis. 
+        1.	Exploratory Data Analysis (EDA) – I’ll perform initial investigations of the dataset to discover any patterns and anomalies.
         2.	How does resale price vary throughout Singapore, with respect to other relevant factors such as flat type, floor area, number of levels etc.?
         3.	Can these information help in choosing a resale flat? 
-        4. [Geospatial](pages/1_🏠_EDA.py) visuals of 2015 transactions 
         
         **Visualisations**
         - Most charts are plotted using [Plotly Open Source Graphing Library for Python](https://plotly.com/python/)

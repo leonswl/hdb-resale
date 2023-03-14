@@ -137,7 +137,7 @@ def main():
         )
     
     with col2:
-        st.metric('value','value')
+        st.write()
 
     with st.expander("Expand"):
         st.dataframe(df_resale)

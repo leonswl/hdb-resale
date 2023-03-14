@@ -41,6 +41,34 @@ def slice_year_range (df, start_year, end_year):
     # and less than 'end_year'
     return df.loc[(df['year']>start_year) & (df['year']<end_year)]
 
+
+def slice_features(df: pd.DataFrame, sel_flat_type: list, sel_town: list, sel_flat_model: list) -> pd.DataFrame:
+    """
+    Returns a filtered pandas DataFrame containing only the rows with flat types specified in sel_flat_type.
+
+    Args:
+        df (pandas.DataFrame): Input DataFrame to filter.
+        sel_flat_type (list): List of flat types to filter the DataFrame.
+        sel_town (list): List of towns to filter the DataFrame.
+        sel_flat_model (list): List of flat models to filter the DataFrame.
+
+    Returns:
+        pandas.DataFrame: Filtered DataFrame containing only the specified flat types, towns and flat models.
+    """
+    
+    # Filter the input DataFrame by selecting rows where the 'flat_type' column value is in the list of selected flat types.
+    df_flat_type = df.loc[df['flat_type'].isin(sel_flat_type)]
+    
+    # Filter the df_flat_type by selecting rows where the 'town' column value is in the list of selected towns.
+    df_town = df_flat_type.loc[df_flat_type['town'].isin(sel_town)]
+    
+    # Filter the df_town by selecting rows where the 'flat_model' column value is in the list of selected flat models.
+    df_flat_model = df_town.loc[df_town['flat_model'].isin(sel_flat_model)]
+    
+    # Return the filtered DataFrame.
+    return df_flat_model
+
+
 def plot_transacts(df,col:str):
     """
     Plots a bar chart of the number of transactions for each type of flat.
@@ -101,16 +129,26 @@ def main():
         )
         st.write('You selected year range between', start_year, 'and', end_year)
 
-        # SLIDER - BIN WIDTH
-        bin_width = st.slider(
-            "Select bin width",
-            min_value=10,
-            max_value=1000,
-            step=10,
-            value=500
-        )
-        st.write('You select a bin width of', bin_width, 'for the resale price distribution plot')
+        # MULTISELECT - FLAT TYPE
+        flat_type_fields = df_load['flat_type'].unique()
+        sel_flat_type = st.multiselect(
+            "Select flat types",
+            options=flat_type_fields
+                )
 
+        # MULTISELECT - TOWN
+        town_fields = df_load['town'].unique()
+        sel_town = st.multiselect(
+                    "Select town",
+                    options=town_fields
+                )
+        
+        # MULTISELECT - FLAT MODEL
+        flat_model_fields = df_load['flat_model'].unique()
+        sel_flat_model = st.multiselect(
+                    "Select flat model",
+                    options=flat_model_fields
+                )
     # END - SIDEBAR
 
     # METRICS
@@ -120,12 +158,34 @@ def main():
     col3.metric("Most Popular Town","Tampines")
     # END - METRICS
 
-    st.write("""
-    I’ll perform initial investigations of the dataset to discover any patterns and anomalies, and also check hypothesis and form hypothesis. 
-    """)
     
     # slice year range based on user's selected range
     df_resale = slice_year_range(df_load, start_year=start_year, end_year=end_year)
+
+    # If the selected flat type list is empty, set it to the default list of flat type fields.
+    if len(sel_flat_type) == 0:
+        sel_flat_type = flat_type_fields
+
+    # If the selected town list is empty, set it to the default list of town fields.
+    if len(sel_town) == 0:
+        sel_town = town_fields
+
+    # If the selected flat model list is empty, set it to the default list of flat model fields.
+    if len(sel_flat_model) == 0:
+        sel_flat_model = flat_model_fields
+
+    # If all three filter lists are empty, create a copy of the input DataFrame.
+    if (len(sel_flat_type) == 0) & (len(sel_town) == 0) & (len(sel_flat_model) == 0):
+        df_resale = df_resale.copy()
+
+    # Otherwise, apply the specified filters to the input DataFrame using the slice_features function.
+    else:
+        df_resale = slice_features(
+                        df_resale, 
+                        sel_flat_type=sel_flat_type, 
+                        sel_town=sel_town, 
+                        sel_flat_model=sel_flat_model)
+
 
     # DATAFRAME SNIPPET
     with st.expander("Expand to see snippet of dataframe"):
@@ -146,7 +206,7 @@ def main():
             """
         )
         # plots for town, flat_type, storey_range and month
-        for col in ['town','flat_type','storey_range', 'month']:
+        for col in ['town','flat_type','storey_range', 'flat_model','month']:
             fig_transacts = plot_transacts(df_resale,col)  
             st.plotly_chart(fig_transacts, use_container_width=True)      
 
@@ -158,13 +218,18 @@ def main():
             """
         )
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
 
         with col1:
-            add_field = st.radio(
-                "Split further with:",
-                options=("None","flat_type","town")
+            # SLIDER - BIN WIDTH
+            bin_width = st.slider(
+                "Select bin width",
+                min_value=10,
+                max_value=1000,
+                step=10,
+                value=500
             )
+            st.write('You select a bin width of', bin_width, 'for the resale price distribution plot')
 
         with col2:
             # RADIO - DISTRIBUTION
@@ -172,9 +237,17 @@ def main():
                 "Select distribution type",
                 options=('box','violin')
             )
-            # st.markdown(f"You selected `{dist_type}` distribution")
+            st.markdown(f"You selected `{dist_type}` distribution")
 
         with col3:
+            # RADIO - SPLIT FEATURES
+            add_field = st.radio(
+                "Split further with:",
+                options=("None","flat_type","town","storey_range",'flat_model')
+            )
+            
+
+        with col4:
             if add_field != 'None':
                 field_options = st.multiselect(
                     "Choose a maximum of 4 options to be included in the distribution plot",
