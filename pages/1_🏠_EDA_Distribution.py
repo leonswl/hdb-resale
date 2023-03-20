@@ -125,7 +125,7 @@ def main():
         start_year, end_year = st.select_slider(
             "Select range of years",
             options=date_range_lst,
-            value=(date_range_lst.min(),date_range_lst.max())
+            value=(date_range_lst[-11],date_range_lst.max())
         )
         st.write('You selected year range between', start_year, 'and', end_year)
 
@@ -191,7 +191,7 @@ def main():
     with st.expander("Expand to see snippet of dataframe"):
         st.dataframe(df_resale[:10000])
 
-    tab1, tab2 = st.tabs(["Features", "Resale Price"])
+    tab1, tab2, tab3 = st.tabs(["Features", "Resale Price", "Relationships"])
 
     with tab1:
         st.markdown(
@@ -280,6 +280,20 @@ def main():
                             color=add_field,
                             marginal=dist_type)
             st.plotly_chart(fig_price, use_container_width=True)
+
+    with tab3:
+        fig_price_flat_type = px.violin(
+            df_resale,
+            x='resale_price',
+            y='flat_model',
+            color='flat_model',
+            title="Resale Price and Flat Models",
+            height=1000
+        )
+        st.plotly_chart(
+            fig_price_flat_type,
+            use_container_width=True,
+            box=True)
 
     
 

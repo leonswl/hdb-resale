@@ -96,7 +96,7 @@ def main():
         start_year, end_year = st.select_slider(
             "Select range of years",
             options=date_range_lst,
-            value=(date_range_lst.min(),date_range_lst.max())
+            value=(date_range_lst[-11],date_range_lst.max())
         )
         st.write('You selected year range between', start_year, 'and', end_year)
 
