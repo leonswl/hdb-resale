@@ -1,4 +1,6 @@
 ## HDB Resale
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://layonsan-hdb-resale.streamlit.app/)
+
 
 Public repository to showcase data visualisation assignment for SD6105 Data Visualisation course under Masters of Science in Data Science in NTU.
 

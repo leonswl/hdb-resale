@@ -186,12 +186,11 @@ def main():
                         sel_town=sel_town, 
                         sel_flat_model=sel_flat_model)
 
-
     # DATAFRAME SNIPPET
     with st.expander("Expand to see snippet of dataframe"):
         st.dataframe(df_resale[:10000])
 
-    tab1, tab2, tab3 = st.tabs(["Features", "Resale Price", "Relationships"])
+    tab1, tab2 = st.tabs(["Features", "Resale Price"])
 
     with tab1:
         st.markdown(
@@ -254,18 +253,22 @@ def main():
                     options=df_resale[add_field].unique(),
                     max_selections=4
                 )
-                st.markdown(f"You selected: `{field_options}`")
-
-                st.write(type(field_options))
 
         if add_field == 'None':
             # plot for resale price
             fig_price = px.histogram(
-                            df_resale,
-                            x="resale_price",
-                            nbins=bin_width, 
-                            title='Distribution of Transactions for Resale Price',
-                            marginal=dist_type)
+                df_resale.sort_values(by='year'),
+                x="resale_price",
+                nbins=bin_width,
+                title='Distribution of Transactions for Resale Price',
+                marginal=dist_type,
+                animation_frame="year",
+                range_x=[df_resale.resale_price.min(), df_resale.resale_price.max()],
+                barmode="overlay",
+            ).update_layout(
+                xaxis_title="Resale Price (S$)",
+                yaxis_title="Frequency",
+            )
             st.plotly_chart(fig_price, use_container_width=True)
 
         else:
@@ -273,27 +276,21 @@ def main():
             df_resale_price = df_resale.loc[df_resale[add_field].isin(field_options)]
             # plot for resale price
             fig_price = px.histogram(
-                            df_resale_price,
-                            x="resale_price",
-                            nbins=bin_width, 
-                            title='Distribution of Transactions for Resale Price',
-                            color=add_field,
-                            marginal=dist_type)
+                df_resale_price.sort_values(by='year'),
+                x="resale_price",
+                nbins=bin_width, 
+                title='Distribution of Transactions for Resale Price',
+                color=add_field,
+                marginal=dist_type,
+                animation_frame="year",
+                range_x=[df_resale_price.resale_price.min(), df_resale_price.resale_price.max()],
+                barmode="overlay",
+            ).update_layout(
+                xaxis_title="Resale Price (S$)",
+                yaxis_title="Frequency",
+            )
             st.plotly_chart(fig_price, use_container_width=True)
 
-    with tab3:
-        fig_price_flat_type = px.violin(
-            df_resale,
-            x='resale_price',
-            y='flat_model',
-            color='flat_model',
-            title="Resale Price and Flat Models",
-            height=1000
-        )
-        st.plotly_chart(
-            fig_price_flat_type,
-            use_container_width=True,
-            box=True)
 
     
 

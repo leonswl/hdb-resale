@@ -118,7 +118,7 @@ def main():
 
     # slice year range based on user's selected range
     df_resale = slice_year_range(df_load, start_year=start_year, end_year=end_year)
-    df_resale.drop(['full_address','search_address','lease_commence_date'],axis=1,inplace=True)
+    df_resale = df_resale.copy().drop(['full_address','search_address','lease_commence_date'],axis=1)
 
     col1, col2 = st.columns([2,3])
 
@@ -141,68 +141,116 @@ def main():
 
     with st.expander("Expand"):
         st.dataframe(df_resale)
-    # LINE PLOT - resale price against TIME
-    # slice dataframe based on users' selected date level (month or year) and aggregate them
-    df_price_date = agg_date(df_resale, x_selector=x_date_select, y_selector='resale_price')
-    fig_price_date = px.line(
-                        df_price_date, 
-                        x=x_date_select, 
-                        y=y_aggregation_select, 
-                        title='Resale Price against Time')
-    st.plotly_chart(fig_price_date, use_container_width=True)
 
-    # BAR PLOT - resale price and TOWN
-    # slice dataframe based on town and aggregate them
-    df_price_town = agg_date(df_resale, x_selector='town', y_selector='resale_price')
+    tab1, tab2 = st.tabs(['univariate','multivariate'])
 
-    fig_price_town = px.bar(
-                    df_price_town, 
-                    x='town',
-                    y=y_aggregation_select,
-                    title=f'{y_aggregation_select.title()} Resale Price in each Town',
-                    text_auto=True).update_layout(xaxis={'categoryorder':'total descending'})
-    st.plotly_chart(fig_price_town, use_container_width=True) # render on streamlit
+    with tab1:
+        # LINE PLOT - resale price against TIME
+        # slice dataframe based on users' selected date level (month or year) and aggregate them
+        df_price_date = agg_date(df_resale, x_selector=x_date_select, y_selector='resale_price')
+        fig_price_date = px.line(
+                            df_price_date, 
+                            x=x_date_select, 
+                            y=y_aggregation_select, 
+                            title='Resale Price against Time')
+        st.plotly_chart(fig_price_date, use_container_width=True)
 
-    # BAR PLOT - resale price and FLAT TYPE
-    # slice dataframe based on  flat type and aggregate them
-    df_price_town = agg_date(df_resale, x_selector='flat_type', y_selector='resale_price')
+        # BAR PLOT - resale price and TOWN
+        # slice dataframe based on town and aggregate them
+        df_price_town = agg_date(df_resale, x_selector='town', y_selector='resale_price')
 
-    fig_price_town = px.bar(
-                    df_price_town, 
-                    x='flat_type',
-                    y=y_aggregation_select,
-                    title=f'{y_aggregation_select.title()} Resale Price in each Flat Type',
-                    text_auto=True).update_layout(xaxis={'categoryorder':'total descending'})
-    st.plotly_chart(fig_price_town, use_container_width=True) # render on streamlit
+        fig_price_town = px.bar(
+                        df_price_town, 
+                        x='town',
+                        y=y_aggregation_select,
+                        title=f'{y_aggregation_select.title()} Resale Price in each Town',
+                        text_auto=True).update_layout(xaxis={'categoryorder':'total descending'})
+        
+        st.plotly_chart(fig_price_town, use_container_width=True) # render on streamlit
+
+        # BAR PLOT - resale price and FLAT TYPE
+        # slice dataframe based on  flat type and aggregate them
+        df_price_town = agg_date(df_resale, x_selector='flat_type', y_selector='resale_price')
+
+        fig_price_town = px.bar(
+                        df_price_town, 
+                        x='flat_type',
+                        y=y_aggregation_select,
+                        title=f'{y_aggregation_select.title()} Resale Price in each Flat Type',
+                        text_auto=True).update_layout(xaxis={'categoryorder':'total descending'})
+        st.plotly_chart(fig_price_town, use_container_width=True) # render on streamlit
+
+        # VIOLIN PLOT - resale price and FLAT MODEL
+        # slice dataframe based on  flat model and aggregate them
+        fig_price_flat_type = px.violin(
+            df_resale,
+            y='resale_price',
+            x='flat_type',
+            color='flat_type',
+            title="Resale Price and Flat Models",
+        ).update_layout(
+            legend={
+            "orientation": "h",
+            "y": 1,
+            "x": 0.2,
+            "title": None
+            }
+        )  # render on streamlit
+        st.plotly_chart(
+            fig_price_flat_type,
+            use_container_width=True,
+            box=True)
 
 
-    # BAR PLOT - resale price and STOREY RANGE
-    # slice dataframe based on storey range and aggregate them
-    df_price_town = agg_date(df_resale, x_selector='storey_range', y_selector='resale_price')
-    fig_price_town = px.bar(
-                    df_price_town, 
-                    x='storey_range',
-                    y=y_aggregation_select,
-                    title=f'{y_aggregation_select.title()} Resale Price in each Storey Range',
-                    text_auto=True).update_layout(xaxis={'categoryorder':'total ascending'})
-    st.plotly_chart(fig_price_town, use_container_width=True) # render on streamliT
+        # BAR PLOT - resale price and STOREY RANGE
+        # slice dataframe based on storey range and aggregate them
+        df_price_town = agg_date(df_resale, x_selector='storey_range', y_selector='resale_price')
+        fig_price_town = px.bar(
+                        df_price_town, 
+                        x='storey_range',
+                        y=y_aggregation_select,
+                        title=f'{y_aggregation_select.title()} Resale Price in each Storey Range',
+                        text_auto=True).update_layout(xaxis={'categoryorder':'total ascending'})
+        st.plotly_chart(fig_price_town, use_container_width=True) # render on streamliT
 
-    # LINE PLOT - resale price and FLOOR AREA
-    # slice dataframe based on floor_area_sqm and aggregate them
-    df_price_area = agg_date(df_resale, x_selector='floor_area_sqm', y_selector='resale_price')
-    fig_price_area = px.line(
-                        df_price_area, x='floor_area_sqm', 
-                        y=y_aggregation_select, 
-                        title='Resale Price against Floor Area (sqm)') # generate figure
-    st.plotly_chart(fig_price_area, use_container_width=True) # render on streamlit
+        # LINE PLOT - resale price and FLOOR AREA
+        # slice dataframe based on floor_area_sqm and aggregate them
+        df_price_area = agg_date(df_resale, x_selector='floor_area_sqm', y_selector='resale_price')
+        fig_price_area = px.line(
+                            df_price_area, x='floor_area_sqm', 
+                            y=y_aggregation_select, 
+                            title='Resale Price against Floor Area (sqm)') # generate figure
+        st.plotly_chart(fig_price_area, use_container_width=True) # render on streamlit
 
 
-    # LINE PLOT - resale price against REMAINING LEASE
-    # slice dataframe based on remaining lease and aggregate them
-    df_price_lease = agg_date(df_resale, x_selector='remaining_lease', y_selector='resale_price')
-    fig_price_lease = px.line(df_price_lease, x='remaining_lease', y=y_aggregation_select, title='Resale Price against Remaining Lease') # generate figure
-    st.plotly_chart(fig_price_lease, use_container_width=True) # render on streamlit
+        # LINE PLOT - resale price against REMAINING LEASE
+        # slice dataframe based on remaining lease and aggregate them
+        df_price_lease = agg_date(df_resale, x_selector='remaining_lease', y_selector='resale_price')
+        fig_price_lease = px.line(df_price_lease, x='remaining_lease', y=y_aggregation_select, title='Resale Price against Remaining Lease') # generate figure
+        st.plotly_chart(fig_price_lease, use_container_width=True) # render on streamlit
 
+    with tab2:
+        # DATAFRAME - median resale price breakdown by flat types
+        with pd.option_context("display.float_format", "${:,.2f}".format):
+            resale_price_table = df_resale.groupby(["town", "flat_type"]).resale_price.median().reset_index()
+            resale_price_pivot = pd.pivot(resale_price_table, index="town", columns="flat_type", values="resale_price")
+            resale_table_columns = ["1 ROOM", "2 ROOM", "3 ROOM", "4 ROOM", "5 ROOM", "EXECUTIVE", "MULTI-GENERATION"]
+
+        st.markdown("#### Median Resale Price Across Towns and Flat Types")
+        st.dataframe(
+            resale_price_pivot.style.background_gradient(
+                    axis=None,
+                    subset=resale_table_columns, 
+                    vmin=resale_price_table.resale_price.min(),
+                    cmap='YlOrRd'
+                ).format(
+                    na_rep="-",
+                    precision=0,
+                    thousands=","
+                ).applymap(
+                    lambda x: 'color: transparent; background-color: transparent' if pd.isnull(x) else ''
+                ),
+            use_container_width=True)
 
 
 

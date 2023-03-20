@@ -10,13 +10,13 @@ def main():
 
     st.set_page_config(
         page_title="Main page of streamlit app",
-        page_icon=""
+        page_icon=""    
     )
 
     st.sidebar.success("Select a demo above")
 
     # title
-    st.title("SD6105 - Data visualisation on HDB Resale Transactions")
+    st.title("HDB Resale Transactions (1990-2023)")
 
     image = Image.open("assets/jiachen-lin-AIk_5-M9Uho-unsplash.jpg")
     st.image(
