@@ -53,7 +53,7 @@ def agg_date(df, x_selector, y_selector):
     
     return df_agg
 
-
+@st.cache_data(ttl=300)
 def slice_year_range (df, start_year, end_year):
     """
     Filters a pandas DataFrame to include only rows where the value of 'year' column is greater than 
@@ -69,6 +69,40 @@ def slice_year_range (df, start_year, end_year):
     # Filter the DataFrame to only include rows where the 'year' value is greater than 'start_year'
     # and less than 'end_year'
     return df.loc[(df['year']>start_year) & (df['year']<end_year)]
+
+@st.cache_data(ttl=300)
+def plotly_violin(df, x_var):
+        fig_violin = px.violin(
+            df,
+            y='resale_price',
+            x=x_var,
+            color=x_var,
+            title=f"Resale Price and {x_var.replace('_',' ').title()}",
+            box=True
+        ).update_layout(
+            xaxis_title=x_var.replace('_',' ').title(),
+            yaxis_title="Resale Price (S$)",
+            legend={
+            "orientation": "h",
+            "y": 1.15,
+            # "x": 0.2,
+            "title": None
+            }
+        )
+        return fig_violin
+
+@st.cache_data(ttl=300)
+def plotly_bar (df,x_var,y_var):
+    fig_bar = px.bar(
+        df, 
+        x=x_var,
+        y=y_var,
+        title=f"{y_var.title()} Resale Price in each {x_var.replace('_',' ').title()}",
+        text_auto=True
+    ).update_layout(
+        xaxis={'categoryorder':'total descending'}
+    )
+    return fig_bar
 
 def main():
     """
@@ -114,7 +148,11 @@ def main():
         )
         st.write('Your selected data level is: ', x_date_select)
 
-    
+        # RADIO SELECT - VISUALISATION TYPE
+        select_flat_type = st.radio(
+                "Select visualisation type",
+                options=("Bar","Violin/Box")
+            )
 
     # slice year range based on user's selected range
     df_resale = slice_year_range(df_load, start_year=start_year, end_year=end_year)
@@ -155,63 +193,34 @@ def main():
                             title='Resale Price against Time')
         st.plotly_chart(fig_price_date, use_container_width=True)
 
-        # BAR PLOT - resale price and TOWN
+        # BAR & VIOLIN PLOTS - resale price and TOWN
         # slice dataframe based on town and aggregate them
         df_price_town = agg_date(df_resale, x_selector='town', y_selector='resale_price')
+        fig_price_town_bar = plotly_bar(df_price_town,x_var='town',y_var=y_aggregation_select)
+        fig_price_town_violin = plotly_violin(df_resale, x_var='town')
 
-        fig_price_town = px.bar(
-                        df_price_town, 
-                        x='town',
-                        y=y_aggregation_select,
-                        title=f'{y_aggregation_select.title()} Resale Price in each Town',
-                        text_auto=True).update_layout(xaxis={'categoryorder':'total descending'})
+        # BAR & VIOLIN PLOTS - resale price and FLAT TYPE
+        # # slice dataframe based on  flat type and aggregate them
+        df_price_flat_type = agg_date(df_resale, x_selector='flat_type', y_selector='resale_price')
+        fig_price_flat_type_bar = plotly_bar(df_price_flat_type, x_var='flat_type',y_var=y_aggregation_select)
+        fig_price_flat_type_violin = plotly_violin(df_resale, x_var='flat_type')
         
-        st.plotly_chart(fig_price_town, use_container_width=True) # render on streamlit
-
-        # BAR PLOT - resale price and FLAT TYPE
-        # slice dataframe based on  flat type and aggregate them
-        df_price_town = agg_date(df_resale, x_selector='flat_type', y_selector='resale_price')
-
-        fig_price_town = px.bar(
-                        df_price_town, 
-                        x='flat_type',
-                        y=y_aggregation_select,
-                        title=f'{y_aggregation_select.title()} Resale Price in each Flat Type',
-                        text_auto=True).update_layout(xaxis={'categoryorder':'total descending'})
-        st.plotly_chart(fig_price_town, use_container_width=True) # render on streamlit
-
-        # VIOLIN PLOT - resale price and FLAT MODEL
-        # slice dataframe based on  flat model and aggregate them
-        fig_price_flat_type = px.violin(
-            df_resale,
-            y='resale_price',
-            x='flat_type',
-            color='flat_type',
-            title="Resale Price and Flat Models",
-        ).update_layout(
-            legend={
-            "orientation": "h",
-            "y": 1,
-            "x": 0.2,
-            "title": None
-            }
-        )  # render on streamlit
-        st.plotly_chart(
-            fig_price_flat_type,
-            use_container_width=True,
-            box=True)
-
-
-        # BAR PLOT - resale price and STOREY RANGE
+        # BAR & VIOLIN PLOTS - resale price and STOREY RANGE
         # slice dataframe based on storey range and aggregate them
-        df_price_town = agg_date(df_resale, x_selector='storey_range', y_selector='resale_price')
-        fig_price_town = px.bar(
-                        df_price_town, 
-                        x='storey_range',
-                        y=y_aggregation_select,
-                        title=f'{y_aggregation_select.title()} Resale Price in each Storey Range',
-                        text_auto=True).update_layout(xaxis={'categoryorder':'total ascending'})
-        st.plotly_chart(fig_price_town, use_container_width=True) # render on streamliT
+        df_price_storey_range = agg_date(df_resale, x_selector='storey_range', y_selector='resale_price')
+        fig_price_storey_range_bar = plotly_bar(df_price_storey_range, x_var='storey_range', y_var=y_aggregation_select)
+        fig_price_storey_range_violin = plotly_violin(df_resale, x_var='storey_range')
+
+        # Render BAR or VIOLIN/BOX plots depending on users' selection
+        if select_flat_type == "Bar":
+            st.plotly_chart(fig_price_town_bar, use_container_width=True) # render on streamlit
+            st.plotly_chart(fig_price_flat_type_bar, use_container_width=True) # render on streamlit
+            st.plotly_chart(fig_price_storey_range_bar, use_container_width=True) # render on streamliT
+        else:
+            st.plotly_chart(fig_price_town_violin, use_container_width=True) # render TOWN on streamlit
+            st.plotly_chart(fig_price_flat_type_violin, use_container_width=True) # render FLAT TYPE on streamlit
+            st.plotly_chart(fig_price_storey_range_violin, use_container_width=True) # render STOREY RANGE on streamlit
+
 
         # LINE PLOT - resale price and FLOOR AREA
         # slice dataframe based on floor_area_sqm and aggregate them
@@ -251,7 +260,6 @@ def main():
                     lambda x: 'color: transparent; background-color: transparent' if pd.isnull(x) else ''
                 ),
             use_container_width=True)
-
 
 
 if __name__ == "__main__":
