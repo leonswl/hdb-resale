@@ -72,24 +72,38 @@ def slice_year_range (df, start_year, end_year):
 
 @st.cache_data(ttl=300)
 def plotly_violin(df, x_var):
-        fig_violin = px.violin(
-            df,
-            y='resale_price',
-            x=x_var,
-            color=x_var,
-            title=f"Resale Price and {x_var.replace('_',' ').title()}",
-            box=True
-        ).update_layout(
-            xaxis_title=x_var.replace('_',' ').title(),
-            yaxis_title="Resale Price (S$)",
-            legend={
-            "orientation": "h",
-            "y": 1.15,
-            # "x": 0.2,
-            "title": None
-            }
-        )
-        return fig_violin
+    """Plot a violin plot of resale prices against a specified x-variable.
+    
+    Args:
+        df (pandas.DataFrame): DataFrame containing the resale prices and the specified x-variable.
+        x_var (str): Name of the x-variable to plot against.
+        
+    Returns:
+        fig_violin (plotly.graph_objs._figure.Figure): Plotly figure object of the violin plot.
+    """
+    # Create a violin plot using Plotly
+    fig_violin = px.violin(
+        df,                             # Dataframe to use for plotting
+        y='resale_price',               # Column containing the resale prices
+        x=x_var,                        # Column containing the specified x-variable
+        color=x_var,                    # Color data points by the specified x-variable
+        title=f"Resale Price and {x_var.replace('_',' ').title()}",    # Title of the plot
+        box=True                        # Show a box plot on top of the violin plot
+    )
+    
+    # Update the layout of the plot with axis titles and legend parameters
+    fig_violin = fig_violin.update_layout(
+        xaxis_title=x_var.replace('_',' ').title(),         # Title of the x-axis
+        yaxis_title="Resale Price (S$)",                     # Title of the y-axis
+        legend={
+            "orientation": "h",                             # Orientation of the legend
+            "y": 1.15,                                      # Position of the legend on the y-axis
+            # "x": 0.2,                                      # Position of the legend on the x-axis
+            "title": None                                   # Title of the legend (set to None to remove)
+        }
+    )
+    
+    return fig_violin    # Return the plotly figure object
 
 @st.cache_data(ttl=300)
 def plotly_bar (df,x_var,y_var):
