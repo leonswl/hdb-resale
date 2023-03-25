@@ -3,71 +3,11 @@ import pandas as pd
 import yaml
 import streamlit as st
 import plotly.express as px
+from src.utility import load_parquet, slice_features, slice_year_range
 
 with open("config.yml", encoding="utf-8", mode='r') as ymlfile:
     cfg = yaml.load(ymlfile, Loader=yaml.Loader)
     artifacts_path = cfg['eda']['artifacts_path']
-
-# cache data to avoid reloading data
-@st.cache_data(ttl=300)
-def load_parquet(path_filename):
-    """
-    Loads a Parquet file located at the given path and filename into a pandas DataFrame.
-
-    Args:
-    - path_filename: string containing the path and filename of the Parquet file to be loaded
-
-    Returns:
-    - pandas DataFrame containing the contents of the Parquet file
-    """
-    
-    # Use pandas' read_parquet() function to load the Parquet file into a DataFrame
-    
-    return pd.read_parquet(path_filename)
-
-def slice_year_range (df, start_year, end_year):
-    """
-    Filters a pandas DataFrame to include only rows where the value of 'year' column is greater than 
-    the 'start_year' variable and less than the 'end_year' variable.
-
-    Args:
-    - df: pandas DataFrame with a column named 'year'
-
-    Returns:
-    - pandas DataFrame with only rows where the 'year' value is greater than 'start_year' and less than 'end_year'
-    """
-    
-    # Filter the DataFrame to only include rows where the 'year' value is greater than 'start_year'
-    # and less than 'end_year'
-    return df.loc[(df['year']>start_year) & (df['year']<end_year)]
-
-
-def slice_features(df: pd.DataFrame, sel_flat_type: list, sel_town: list, sel_flat_model: list) -> pd.DataFrame:
-    """
-    Returns a filtered pandas DataFrame containing only the rows with flat types specified in sel_flat_type.
-
-    Args:
-        df (pandas.DataFrame): Input DataFrame to filter.
-        sel_flat_type (list): List of flat types to filter the DataFrame.
-        sel_town (list): List of towns to filter the DataFrame.
-        sel_flat_model (list): List of flat models to filter the DataFrame.
-
-    Returns:
-        pandas.DataFrame: Filtered DataFrame containing only the specified flat types, towns and flat models.
-    """
-    
-    # Filter the input DataFrame by selecting rows where the 'flat_type' column value is in the list of selected flat types.
-    df_flat_type = df.loc[df['flat_type'].isin(sel_flat_type)]
-    
-    # Filter the df_flat_type by selecting rows where the 'town' column value is in the list of selected towns.
-    df_town = df_flat_type.loc[df_flat_type['town'].isin(sel_town)]
-    
-    # Filter the df_town by selecting rows where the 'flat_model' column value is in the list of selected flat models.
-    df_flat_model = df_town.loc[df_town['flat_model'].isin(sel_flat_model)]
-    
-    # Return the filtered DataFrame.
-    return df_flat_model
-
 
 def plot_transacts(df,col:str):
     """
@@ -91,7 +31,17 @@ def plot_transacts(df,col:str):
         df_transacts = df_transacts.sort_values(by=['num_transactions'], ascending=False).reset_index()
 
         # Create a bar chart using Plotly Express
-        fig = px.bar(df_transacts, x=col, y='num_transactions', text_auto=True, title=f"Number of Transactions in each {col.replace('_',' ').title()}")
+        fig = px.bar(
+            df_transacts, 
+            x=col, 
+            y='num_transactions', 
+            text_auto=True, 
+            title=f"Number of Transactions in each {col.replace('_',' ').title()}"
+            ).update_layout(
+            xaxis_title=col.replace('_',' ').title(),
+            yaxis_title = f"Number of Transactions"
+            )
+        
 
         return fig
         
@@ -149,15 +99,10 @@ def main():
                     "Select flat model",
                     options=flat_model_fields
                 )
+        
+        st.write("This dashboard is created by [Leon Sun](https://github.com/leonswl). The source code for this project is published in this [GitHub Repository](https://github.com/leonswl/hdb-resale).")
+
     # END - SIDEBAR
-
-    # METRICS
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Transactions",len(df_load))
-    col2.metric("Highest Transaction", f"S${int(max(df_load['resale_price']))}")
-    col3.metric("Most Popular Town","Tampines")
-    # END - METRICS
-
     
     # slice year range based on user's selected range
     df_resale = slice_year_range(df_load, start_year=start_year, end_year=end_year)
@@ -185,6 +130,17 @@ def main():
                         sel_flat_type=sel_flat_type, 
                         sel_town=sel_town, 
                         sel_flat_model=sel_flat_model)
+        
+    # METRICS
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Transactions",len(df_resale))
+    col2.metric("Highest Transaction", f"S${int(max(df_resale['resale_price']))}")
+    top_town = pd.DataFrame(df_resale.groupby(['town'])['town'].count()).rename(columns={'town':'count'}).sort_values(by=['count'],ascending=False).iloc[0].name
+    col3.metric("Most Popular Town",top_town.title())
+
+    st.write()
+
+    # END - METRICS
 
     # DATAFRAME SNIPPET
     with st.expander("Expand to see snippet of dataframe"):
@@ -210,7 +166,6 @@ def main():
             st.plotly_chart(fig_transacts, use_container_width=True)      
 
     with tab2:
-
         st.markdown(
             """
             ## Resale Price Distribution
@@ -290,10 +245,6 @@ def main():
                 yaxis_title="Frequency",
             )
             st.plotly_chart(fig_price, use_container_width=True)
-
-
-    
-
 
 if __name__ == "__main__":
     main()

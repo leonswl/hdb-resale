@@ -13,7 +13,9 @@ def main():
         page_icon=""    
     )
 
-    st.sidebar.success("Select a demo above")
+    with st.sidebar:
+        st.success("Select a demo above")
+        st.write("This dashboard is created by [Leon Sun](https://github.com/leonswl). The source code for this project is published in this [GitHub Repository](https://github.com/leonswl/hdb-resale).")
 
     # title
     st.title("HDB Resale Transactions (1990-2023)")

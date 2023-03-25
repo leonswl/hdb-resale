@@ -3,120 +3,12 @@ import pandas as pd
 import numpy as np
 import yaml
 import streamlit as st
-import plotly.express as px
+from src.utility import load_parquet, slice_features, slice_year_range, agg_date, plotly_violin, plotly_bar, plotly_line
 
 with open("config.yml", encoding="utf-8", mode='r') as ymlfile:
     cfg = yaml.load(ymlfile, Loader=yaml.Loader)
     artifacts_path = cfg['eda']['artifacts_path']
 
-# cache data to avoid reloading data
-@st.cache_data(ttl=300)
-def load_parquet(path_filename):
-    """
-    Loads a Parquet file located at the given path and filename into a pandas DataFrame.
-
-    Args:
-    - path_filename: string containing the path and filename of the Parquet file to be loaded
-
-    Returns:
-    - pandas DataFrame containing the contents of the Parquet file
-    """
-    
-    # Use pandas' read_parquet() function to load the Parquet file into a DataFrame
-    
-    return pd.read_parquet(path_filename)
-
-# 
-@st.cache_data(ttl=300)
-def agg_date(df, x_selector, y_selector):
-    """Aggregate the input DataFrame `df` by a given `date_level_selector`.
-
-    Args:
-        df (pd.DataFrame): Input DataFrame to be aggregated.
-        date_level_selector (str): Column name to group the DataFrame by.
-
-    Returns:
-        pd.DataFrame: Aggregated DataFrame with minimum, maximum, mean and median resale prices
-    """
-    
-    # Group the DataFrame by the given date_level_selector column
-    # and aggregate the resale_price column using different functions
-    df_agg = pd.DataFrame(df
-                .groupby(by=[x_selector])
-                .agg(
-                    min=pd.NamedAgg(column=y_selector, aggfunc='min'),
-                    max=pd.NamedAgg(column=y_selector, aggfunc='max'),
-                    mean=pd.NamedAgg(column=y_selector, aggfunc=lambda x: int(np.mean(x))),
-                    median=pd.NamedAgg(column=y_selector, aggfunc=lambda x: int(np.median(x)))
-                    )
-                ).reset_index()
-    
-    return df_agg
-
-@st.cache_data(ttl=300)
-def slice_year_range (df, start_year, end_year):
-    """
-    Filters a pandas DataFrame to include only rows where the value of 'year' column is greater than 
-    the 'start_year' variable and less than the 'end_year' variable.
-
-    Args:
-    - df: pandas DataFrame with a column named 'year'
-
-    Returns:
-    - pandas DataFrame with only rows where the 'year' value is greater than 'start_year' and less than 'end_year'
-    """
-    
-    # Filter the DataFrame to only include rows where the 'year' value is greater than 'start_year'
-    # and less than 'end_year'
-    return df.loc[(df['year']>start_year) & (df['year']<end_year)]
-
-@st.cache_data(ttl=300)
-def plotly_violin(df, x_var):
-    """Plot a violin plot of resale prices against a specified x-variable.
-    
-    Args:
-        df (pandas.DataFrame): DataFrame containing the resale prices and the specified x-variable.
-        x_var (str): Name of the x-variable to plot against.
-        
-    Returns:
-        fig_violin (plotly.graph_objs._figure.Figure): Plotly figure object of the violin plot.
-    """
-    # Create a violin plot using Plotly
-    fig_violin = px.violin(
-        df,                             # Dataframe to use for plotting
-        y='resale_price',               # Column containing the resale prices
-        x=x_var,                        # Column containing the specified x-variable
-        color=x_var,                    # Color data points by the specified x-variable
-        title=f"Resale Price and {x_var.replace('_',' ').title()}",    # Title of the plot
-        box=True                        # Show a box plot on top of the violin plot
-    )
-    
-    # Update the layout of the plot with axis titles and legend parameters
-    fig_violin = fig_violin.update_layout(
-        xaxis_title=x_var.replace('_',' ').title(),         # Title of the x-axis
-        yaxis_title="Resale Price (S$)",                     # Title of the y-axis
-        legend={
-            "orientation": "h",                             # Orientation of the legend
-            "y": 1.15,                                      # Position of the legend on the y-axis
-            # "x": 0.2,                                      # Position of the legend on the x-axis
-            "title": None                                   # Title of the legend (set to None to remove)
-        }
-    )
-    
-    return fig_violin    # Return the plotly figure object
-
-@st.cache_data(ttl=300)
-def plotly_bar (df,x_var,y_var):
-    fig_bar = px.bar(
-        df, 
-        x=x_var,
-        y=y_var,
-        title=f"{y_var.title()} Resale Price in each {x_var.replace('_',' ').title()}",
-        text_auto=True
-    ).update_layout(
-        xaxis={'categoryorder':'total descending'}
-    )
-    return fig_bar
 
 def main():
     """
@@ -148,34 +40,59 @@ def main():
         )
         st.write('You selected year range between', start_year, 'and', end_year)
 
-        # RADIO SELECT - AGGREGATION MODE
-        y_aggregation_select = st.radio(
-            "Select mode of aggregation for resale price. This applies to all charts on this page",
-            options=('mean','median','min','max')
-        )
-        st.write('You selected aggregation mode: ', y_aggregation_select)
 
-        # RADIO SELECT - DATE LEVEL
-        x_date_select = st.radio(
-            "Select date level. This applies only to the first chart with time as the x-axis",
-            options=('month','year')
-        )
-        st.write('Your selected data level is: ', x_date_select)
+        # MULTISELECT - FLAT TYPE
+        flat_type_fields = df_load['flat_type'].unique()
+        sel_flat_type = st.multiselect(
+            "Select flat types",
+            options=flat_type_fields
+                )
 
-        # RADIO SELECT - VISUALISATION TYPE
-        select_flat_type = st.radio(
-                "Select visualisation type",
-                options=("Bar","Violin/Box")
-            )
+        # MULTISELECT - TOWN
+        town_fields = df_load['town'].unique()
+        sel_town = st.multiselect(
+                    "Select town",
+                    options=town_fields
+                )
+        
+        # MULTISELECT - FLAT MODEL
+        flat_model_fields = df_load['flat_model'].unique()
+        sel_flat_model = st.multiselect(
+                    "Select flat model",
+                    options=flat_model_fields
+                )
+        
+        st.write("This dashboard is created by [Leon Sun](https://github.com/leonswl). The source code for this project is published in this [GitHub Repository](https://github.com/leonswl/hdb-resale).")
 
     # slice year range based on user's selected range
     df_resale = slice_year_range(df_load, start_year=start_year, end_year=end_year)
     df_resale = df_resale.copy().drop(['full_address','search_address','lease_commence_date'],axis=1)
 
-    col1, col2 = st.columns([2,3])
+    # If the selected flat type list is empty, set it to the default list of flat type fields.
+    if len(sel_flat_type) == 0:
+        sel_flat_type = flat_type_fields
 
-    with col1:
-        st.markdown(
+    # If the selected town list is empty, set it to the default list of town fields.
+    if len(sel_town) == 0:
+        sel_town = town_fields
+
+    # If the selected flat model list is empty, set it to the default list of flat model fields.
+    if len(sel_flat_model) == 0:
+        sel_flat_model = flat_model_fields
+
+    # If all three filter lists are empty, create a copy of the input DataFrame.
+    if (len(sel_flat_type) == 0) & (len(sel_town) == 0) & (len(sel_flat_model) == 0):
+        df_resale = df_resale.copy()
+
+    # Otherwise, apply the specified filters to the input DataFrame using the slice_features function.
+    else:
+        df_resale = slice_features(
+                        df_resale, 
+                        sel_flat_type=sel_flat_type, 
+                        sel_town=sel_town, 
+                        sel_flat_model=sel_flat_model)
+
+    st.markdown(
             """
             I'll investigate how resale price changes with the various features:
             1. Time (month/year) - note that data is based on date of approval for the resale transactions. For March 2012 onwards, the data is based on date of registration for the resale transactions
@@ -187,24 +104,42 @@ def main():
             7. Remaining Lease (years)
             """
         )
-    
-    with col2:
-        st.write()
 
     with st.expander("Expand"):
         st.dataframe(df_resale)
-
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        # RADIO SELECT - AGGREGATION MODE
+        y_aggregation_select = st.radio(
+            "Select mode of aggregation for resale price. This applies to all charts on this page",
+            options=('median','mean','min','max')
+        )
+        st.write('You selected aggregation mode: ', y_aggregation_select)
+    
+    with col2:
+        # RADIO SELECT - DATE LEVEL
+        x_date_select = st.radio(
+            "Select date level. This applies only to the first chart with time as the x-axis",
+            options=('month','year')
+        )
+        st.write('Your selected data level is: ', x_date_select)
+    with col3:
+        # RADIO SELECT - VISUALISATION TYPE
+        select_flat_type = st.radio(
+                "Select visualisation type",
+                options=("Bar","Violin/Box")
+            )
+        st.write(f"You selected: {select_flat_type}")
+    
+    # Create 2 tabs
     tab1, tab2 = st.tabs(['univariate','multivariate'])
 
     with tab1:
         # LINE PLOT - resale price against TIME
         # slice dataframe based on users' selected date level (month or year) and aggregate them
         df_price_date = agg_date(df_resale, x_selector=x_date_select, y_selector='resale_price')
-        fig_price_date = px.line(
-                            df_price_date, 
-                            x=x_date_select, 
-                            y=y_aggregation_select, 
-                            title='Resale Price against Time')
+        fig_price_date = plotly_line(df_price_date, x_date_select, y_aggregation_select)
         st.plotly_chart(fig_price_date, use_container_width=True)
 
         # BAR & VIOLIN PLOTS - resale price and TOWN
@@ -235,21 +170,16 @@ def main():
             st.plotly_chart(fig_price_flat_type_violin, use_container_width=True) # render FLAT TYPE on streamlit
             st.plotly_chart(fig_price_storey_range_violin, use_container_width=True) # render STOREY RANGE on streamlit
 
-
         # LINE PLOT - resale price and FLOOR AREA
         # slice dataframe based on floor_area_sqm and aggregate them
         df_price_area = agg_date(df_resale, x_selector='floor_area_sqm', y_selector='resale_price')
-        fig_price_area = px.line(
-                            df_price_area, x='floor_area_sqm', 
-                            y=y_aggregation_select, 
-                            title='Resale Price against Floor Area (sqm)') # generate figure
+        fig_price_area = plotly_line(df_price_area, 'floor_area_sqm', y_aggregation_select)
         st.plotly_chart(fig_price_area, use_container_width=True) # render on streamlit
-
 
         # LINE PLOT - resale price against REMAINING LEASE
         # slice dataframe based on remaining lease and aggregate them
         df_price_lease = agg_date(df_resale, x_selector='remaining_lease', y_selector='resale_price')
-        fig_price_lease = px.line(df_price_lease, x='remaining_lease', y=y_aggregation_select, title='Resale Price against Remaining Lease') # generate figure
+        fig_price_lease = plotly_line(df_price_lease, 'remaining_lease',y_aggregation_select)
         st.plotly_chart(fig_price_lease, use_container_width=True) # render on streamlit
 
     with tab2:
@@ -257,8 +187,8 @@ def main():
         with pd.option_context("display.float_format", "${:,.2f}".format):
             resale_price_table = df_resale.groupby(["town", "flat_type"]).resale_price.median().reset_index()
             resale_price_pivot = pd.pivot(resale_price_table, index="town", columns="flat_type", values="resale_price")
-            resale_table_columns = ["1 ROOM", "2 ROOM", "3 ROOM", "4 ROOM", "5 ROOM", "EXECUTIVE", "MULTI-GENERATION"]
-
+            # resale_table_columns = ["1 ROOM", "2 ROOM", "3 ROOM", "4 ROOM", "5 ROOM", "EXECUTIVE", "MULTI-GENERATION"]
+            resale_table_columns = df_resale['flat_type'].unique()
         st.markdown("#### Median Resale Price Across Towns and Flat Types")
         st.dataframe(
             resale_price_pivot.style.background_gradient(

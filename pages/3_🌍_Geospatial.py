@@ -2,8 +2,8 @@
 import pandas as pd
 import yaml
 import streamlit as st
-# import plotly.express as px
 import pydeck as pdk
+from src.utility import slice_features
 
 with open("config.yml", encoding="utf-8", mode='r') as ymlfile:
     cfg = yaml.load(ymlfile, Loader=yaml.Loader)
@@ -39,33 +39,6 @@ def load_clean_parquet(path_filename):
 
     # Return the cleaned DataFrame
     return df_coord_dropna
-
-
-def slice_features(df: pd.DataFrame, sel_flat_type: list, sel_town: list, sel_flat_model: list) -> pd.DataFrame:
-    """
-    Returns a filtered pandas DataFrame containing only the rows with flat types specified in sel_flat_type.
-
-    Args:
-        df (pandas.DataFrame): Input DataFrame to filter.
-        sel_flat_type (list): List of flat types to filter the DataFrame.
-        sel_town (list): List of towns to filter the DataFrame.
-        sel_flat_model (list): List of flat models to filter the DataFrame.
-
-    Returns:
-        pandas.DataFrame: Filtered DataFrame containing only the specified flat types, towns and flat models.
-    """
-    
-    # Filter the input DataFrame by selecting rows where the 'flat_type' column value is in the list of selected flat types.
-    df_flat_type = df.loc[df['flat_type'].isin(sel_flat_type)]
-    
-    # Filter the df_flat_type by selecting rows where the 'town' column value is in the list of selected towns.
-    df_town = df_flat_type.loc[df_flat_type['town'].isin(sel_town)]
-    
-    # Filter the df_town by selecting rows where the 'flat_model' column value is in the list of selected flat models.
-    df_flat_model = df_town.loc[df_town['flat_model'].isin(sel_flat_model)]
-    
-    # Return the filtered DataFrame.
-    return df_flat_model
 
 def find_sg_coord(df):
     """
@@ -186,6 +159,9 @@ def main():
                     "Select flat model",
                     options=flat_model_fields
         )
+
+        st.write("This dashboard is created by [Leon Sun](https://github.com/leonswl). The source code for this project is published in this [GitHub Repository](https://github.com/leonswl/hdb-resale).")
+
     # END - SIDEBAR 
 
     # slice year range based on
