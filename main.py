@@ -49,7 +49,7 @@ def main():
 
         **Datasets**
         - Original Dataset: [HDB Resale Flat Prices](https://data.gov.sg/dataset/resale-flat-prices)
-        - Cleaned Dataset: [1990-2020 Dataset](artifacts/hdb_resale.parquet)
+        - Cleaned Dataset: [1990-2023 Dataset](https://github.com/leonswl/hdb-resale/blob/main/artifacts/hdb_resale.parquet)
         - 2015 Transactions with Coordinates Dataset: [2015 Geocoded Resale Transactions](artifacts/2015_geocoded.parquet)
         """
     )

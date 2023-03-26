@@ -3,11 +3,29 @@ import pandas as pd
 import yaml
 import streamlit as st
 import plotly.express as px
-from src.utility import load_parquet, slice_features, slice_year_range
+from src.utility import slice_features, slice_year_range
 
 with open("config.yml", encoding="utf-8", mode='r') as ymlfile:
     cfg = yaml.load(ymlfile, Loader=yaml.Loader)
     artifacts_path = cfg['eda']['artifacts_path']
+
+
+# cache data to avoid reloading data
+@st.cache_data(ttl=300)
+def load_parquet(path_filename):
+    """
+    Loads a Parquet file located at the given path and filename into a pandas DataFrame.
+
+    Args:
+    - path_filename: string containing the path and filename of the Parquet file to be loaded
+
+    Returns:
+    - pandas DataFrame containing the contents of the Parquet file
+    """
+    
+    # Use pandas' read_parquet() function to load the Parquet file into a DataFrame
+    
+    return pd.read_parquet(path_filename)
 
 def plot_transacts(df,col:str):
     """
