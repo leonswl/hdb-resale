@@ -28,6 +28,53 @@ def load_parquet(path_filename):
     return pd.read_parquet(path_filename)
 
 
+
+@st.cache_data(ttl=300)
+def slice_features(df: pd.DataFrame, sel_flat_type: list, sel_town: list, sel_flat_model: list) -> pd.DataFrame:
+    """
+    Returns a filtered pandas DataFrame containing only the rows with flat types specified in sel_flat_type.
+
+    Args:
+        df (pandas.DataFrame): Input DataFrame to filter.
+        sel_flat_type (list): List of flat types to filter the DataFrame.
+        sel_town (list): List of towns to filter the DataFrame.
+        sel_flat_model (list): List of flat models to filter the DataFrame.
+
+    Returns:
+        pandas.DataFrame: Filtered DataFrame containing only the specified flat types, towns and flat models.
+    """
+    
+    # Filter the input DataFrame by selecting rows where the 'flat_type' column value is in the list of selected flat types.
+    df_flat_type = df.loc[df['flat_type'].isin(sel_flat_type)]
+    
+    # Filter the df_flat_type by selecting rows where the 'town' column value is in the list of selected towns.
+    df_town = df_flat_type.loc[df_flat_type['town'].isin(sel_town)]
+    
+    # Filter the df_town by selecting rows where the 'flat_model' column value is in the list of selected flat models.
+    df_flat_model = df_town.loc[df_town['flat_model'].isin(sel_flat_model)]
+    
+    # Return the filtered DataFrame.
+    return df_flat_model
+
+@st.cache_data(ttl=300)
+def slice_year_range (df, start_year, end_year):
+    """
+    Filters a pandas DataFrame to include only rows where the value of 'year' column is greater than 
+    the 'start_year' variable and less than the 'end_year' variable.
+
+    Args:
+    - df: pandas DataFrame with a column named 'year'
+
+    Returns:
+    - pandas DataFrame with only rows where the 'year' value is greater than 'start_year' and less than 'end_year'
+    """
+    
+    # Filter the DataFrame to only include rows where the 'year' value is greater than 'start_year'
+    # and less than 'end_year'
+    return df.loc[(df['year']>start_year) & (df['year']<end_year)]
+
+
+
 def main():
     """
     First page of Streamlit app to render EDA visualisations
