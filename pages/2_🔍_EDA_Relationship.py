@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import yaml
 import streamlit as st
-from src.utility import slice_features, slice_year_range, agg_date, plotly_violin, plotly_bar, plotly_line
+from src.utility import agg_date, plotly_violin, plotly_bar, plotly_line
 
 
 with open("config.yml", encoding="utf-8", mode='r') as ymlfile:
