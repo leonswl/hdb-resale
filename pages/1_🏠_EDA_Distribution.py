@@ -3,7 +3,6 @@ import pandas as pd
 import yaml
 import streamlit as st
 import plotly.express as px
-from src.utility import plot_transacts
 
 with open("config.yml", encoding="utf-8", mode='r') as ymlfile:
     cfg = yaml.load(ymlfile, Loader=yaml.Loader)
@@ -70,6 +69,46 @@ def slice_features(df: pd.DataFrame, sel_flat_type: list, sel_town: list, sel_fl
     
     # Return the filtered DataFrame.
     return df_flat_model
+
+@st.cache_data(ttl=300)
+def plot_transacts(df,col:str):
+    """
+    Plots a bar chart of the number of transactions for each type of flat.
+
+    Args:
+        df (pandas.DataFrame): A pandas DataFrame containing the data to be plotted. 
+            Must have a 'flat_type' column.
+        
+        col (string): a valid string that must match column values of the input dataframe
+
+    Returns:
+        plotly.graph_objs._figure.Figure: A plotly bar chart figure object.
+    """
+    if col in df.columns:
+        # Create a DataFrame grouped by col variable and count the number of transactions for each variable
+        df_transacts = pd.DataFrame(df.groupby([col])[col].count())
+        # Rename the column to 'num_transactions'
+        df_transacts.columns = ['num_transactions']
+        # Sort the DataFrame by number of transactions in descending order
+        df_transacts = df_transacts.sort_values(by=['num_transactions'], ascending=False).reset_index()
+
+        # Create a bar chart using Plotly Express
+        fig = px.bar(
+            df_transacts, 
+            x=col, 
+            y='num_transactions', 
+            text_auto=True, 
+            title=f"Number of Transactions in each {col.replace('_',' ').title()}"
+            ).update_layout(
+            xaxis_title=col.replace('_',' ').title(),
+            yaxis_title = f"Number of Transactions"
+            )
+    
+        return fig
+        
+    else:
+        # If 'town' column is not present in DataFrame, print an error message
+        st.write(f"{col} attribute is not present in the data set")
 
 def main():
     """

@@ -3,8 +3,7 @@ import pandas as pd
 import numpy as np
 import yaml
 import streamlit as st
-from src.utility import agg_date, plotly_violin, plotly_bar, plotly_line
-
+import plotly.express as px
 
 with open("config.yml", encoding="utf-8", mode='r') as ymlfile:
     cfg = yaml.load(ymlfile, Loader=yaml.Loader)
@@ -26,8 +25,6 @@ def load_parquet(path_filename):
     # Use pandas' read_parquet() function to load the Parquet file into a DataFrame
     
     return pd.read_parquet(path_filename)
-
-
 
 @st.cache_data(ttl=300)
 def slice_features(df: pd.DataFrame, sel_flat_type: list, sel_town: list, sel_flat_model: list) -> pd.DataFrame:
@@ -73,7 +70,96 @@ def slice_year_range (df, start_year, end_year):
     # and less than 'end_year'
     return df.loc[(df['year']>start_year) & (df['year']<end_year)]
 
+@st.cache_data(ttl=300)
+def agg_date(df, x_selector, y_selector):
+    """Aggregate the input DataFrame `df` by a given `date_level_selector`.
 
+    Args:
+        df (pd.DataFrame): Input DataFrame to be aggregated.
+        date_level_selector (str): Column name to group the DataFrame by.
+
+    Returns:
+        pd.DataFrame: Aggregated DataFrame with minimum, maximum, mean and median resale prices
+    """
+    
+    # Group the DataFrame by the given date_level_selector column
+    # and aggregate the resale_price column using different functions
+    df_agg = pd.DataFrame(df
+                .groupby(by=[x_selector])
+                .agg(
+                    min=pd.NamedAgg(column=y_selector, aggfunc='min'),
+                    max=pd.NamedAgg(column=y_selector, aggfunc='max'),
+                    mean=pd.NamedAgg(column=y_selector, aggfunc=lambda x: int(np.mean(x))),
+                    median=pd.NamedAgg(column=y_selector, aggfunc=lambda x: int(np.median(x)))
+                    )
+                ).reset_index()
+    
+    return df_agg
+
+#
+@st.cache_data(ttl=300)
+def plotly_violin(df, x_var):
+    """Plot a violin plot of resale prices against a specified x-variable.
+    
+    Args:
+        df (pandas.DataFrame): DataFrame containing the resale prices and the specified x-variable.
+        x_var (str): Name of the x-variable to plot against.
+        
+    Returns:
+        fig_violin (plotly.graph_objs._figure.Figure): Plotly figure object of the violin plot.
+    """
+    # Create a violin plot using Plotly
+    fig_violin = px.violin(
+        df,                             # Dataframe to use for plotting
+        y='resale_price',               # Column containing the resale prices
+        x=x_var,                        # Column containing the specified x-variable
+        color=x_var,                    # Color data points by the specified x-variable
+        title=f"Resale Price and {x_var.replace('_',' ').title()}",    # Title of the plot
+        box=True                        # Show a box plot on top of the violin plot
+    )
+    
+    # Update the layout of the plot with axis titles and legend parameters
+    fig_violin = fig_violin.update_layout(
+        xaxis_title=x_var.replace('_',' ').title(),         # Title of the x-axis
+        yaxis_title="Resale Price (S$)",                     # Title of the y-axis
+        legend={
+            "orientation": "h",                             # Orientation of the legend
+            "y": 1.15,                                      # Position of the legend on the y-axis
+            # "x": 0.2,                                      # Position of the legend on the x-axis
+            "title": None                                   # Title of the legend (set to None to remove)
+        }
+    )
+    
+    return fig_violin    # Return the plotly figure object
+
+@st.cache_data(ttl=300)
+def plotly_bar (df,x_var,y_var):
+    fig_bar = px.bar(
+        df, 
+        x=x_var,
+        y=y_var,
+        title=f"{y_var.title()} Resale Price in each {x_var.replace('_',' ').title()}",
+        text_auto=True
+    ).update_layout(
+        xaxis={'categoryorder':'total descending'},
+        xaxis_title=x_var.replace('_',' ').title(),
+        yaxis_title = f"{y_var.title()} Resale Price (S$)"
+    )
+    return fig_bar
+
+@st.cache_data(ttl=300)
+def plotly_line(df,x_var, y_var):
+            fig_line = px.line(
+                df, 
+                x=x_var, 
+                y=y_var, 
+                title=f"{y_var.title()} Resale Price against {x_var.replace('_',' ').title()}"
+            ).update_layout(
+                xaxis_title=x_var.replace('_',' ').title(),
+                yaxis_title = f"{y_var.title()} Resale Price (S$)"
+                )
+
+            return fig_line
 
 def main():
     """

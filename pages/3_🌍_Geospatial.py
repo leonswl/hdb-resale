@@ -103,6 +103,7 @@ def find_sg_coord(df):
 
     return df
 
+@st.cache_data(ttl=300)
 def select_elevation_var(input_elevation_var):
     """
     Given a string representing an elevation variable, returns a standardized version of the variable name.
